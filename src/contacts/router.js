@@ -9,14 +9,32 @@ const { fakeDatabase } = require('../database/fakeDatabase');
 const { routerHandleResult } = require('../routerHandleResult');
 
 function handle(request, response) {
-  if (urlPathOf(request) !== '/contacts') {
+
+  if (!urlPathOf(request).startsWith('/contacts') ) {
     return routerHandleResult.NO_URL_PATH_MATCH;
   }
 
-  if (request.method !== 'GET') {
-    return routerHandleResult.NO_HTTP_METHOD_MATCH;
+  if (request.method === 'DELETE') {
+    const pathParams = urlPathOf(request).split('/').slice(1); 
+    const contactId = pathParams[1];
+console.log('aqui esta el error', contactId);
+    if (contactId) {
+      const contactToDelete = fakeDatabase.selectFromContactsById(contactId);
+      if (contactToDelete) {
+        fakeDatabase.deleteContactsById(contactId);
+        respondWith200OkJson(response);
+      } else {
+        respondWith404NotFound(response);
+      }
+    } else {
+      respondWith400BadRequest(response);
+    }
+
+    return routerHandleResult.HANDLED;
   }
 
+  else if (request.method === 'GET') {
+    
   let contacts = fakeDatabase.selectAllFromContacts();
 
   const queryParameters = querystring.parse(request.url.split('?')[1]);
@@ -28,6 +46,9 @@ function handle(request, response) {
     contacts = contacts.filter(contact =>
       contact.name.toLowerCase().includes(lowercasedPhrase)
     );
+  } else {
+    respondWith400BadRequest(response);
+    return routerHandleResult.HANDLED;
   }
 
   const limit = parseInt(queryParameters.limit, 10); // Parse the limit parameter
@@ -45,6 +66,10 @@ function handle(request, response) {
   contacts.sort((a, b) => a.name.localeCompare(b.name));
   respondWith200OkJson(response, contacts);
   return routerHandleResult.HANDLED;
+} else {
+  return routerHandleResult.NO_METHOD_MATCH;
+}
+
 }
 
 module.exports = {
