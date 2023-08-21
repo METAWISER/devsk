@@ -10,7 +10,16 @@ const routers = [
 ];
 
 module.exports = function(request, response) {
-  if (routers[0].handle(request, response) !== routerHandleResult.HANDLED) {
+  let handled = false;
+
+  for (const router of routers) {
+    if (router.handle(request, response) === routerHandleResult.HANDLED) {
+      handled = true;
+      break;
+    }
+  }
+
+  if (!handled) {
     respondWith404NotFound(response);
-  };
+  }
 };
